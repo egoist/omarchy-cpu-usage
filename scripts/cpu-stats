@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+set -u
+export LC_ALL=C
+
+sampled_ms=$(date +%s%3N)
+temperature_c=-1
+temperature_input=
+
+for name_path in /sys/class/hwmon/hwmon*/name; do
+  [[ -r $name_path ]] || continue
+  read -r sensor_name < "$name_path" || continue
+  case "$sensor_name" in
+    k10temp|coretemp|zenpower|cpu_thermal)
+      for input_path in "${name_path%/name}"/temp*_input; do
+        if [[ -r $input_path ]]; then
+          temperature_input=$input_path
+          break 2
+        fi
+      done
+      ;;
+  esac
+done
+
+if [[ -z $temperature_input ]]; then
+  for input_path in /sys/class/hwmon/hwmon*/temp*_input; do
+    if [[ -r $input_path ]]; then
+      temperature_input=$input_path
+      break
+    fi
+  done
+fi
+
+if [[ -n $temperature_input ]]; then
+  read -r temperature_raw < "$temperature_input" || temperature_raw=
+  if [[ $temperature_raw =~ ^-?[0-9]+$ ]]; then
+    temperature_c=$(awk -v raw="$temperature_raw" 'BEGIN { printf "%.1f", raw / 1000 }')
+  fi
+fi
+
+awk -v sampled_ms="$sampled_ms" -v temperature_c="$temperature_c" '
+  FILENAME == "/proc/stat" && $1 == "cpu" {
+    user_ticks = $2 + $3
+    system_ticks = $4 + $7 + $8 + $9
+    idle_ticks = $5 + $6
+    total_ticks = user_ticks + system_ticks + idle_ticks
+    next
+  }
+
+  FILENAME == "/proc/stat" && $1 ~ /^cpu[0-9]+$/ {
+    cpu_count++
+    next
+  }
+
+  FILENAME == "/proc/loadavg" {
+    load_1 = $1
+    load_5 = $2
+    load_15 = $3
+    next
+  }
+
+  FILENAME == "/proc/uptime" {
+    uptime_seconds = $1
+  }
+
+  END {
+    if (total_ticks <= 0) exit 1
+    printf "{"
+    printf "\"sampledMs\":%.0f,", sampled_ms
+    printf "\"userTicks\":%.0f,", user_ticks
+    printf "\"systemTicks\":%.0f,", system_ticks
+    printf "\"idleTicks\":%.0f,", idle_ticks
+    printf "\"totalTicks\":%.0f,", total_ticks
+    printf "\"cpuCount\":%d,", cpu_count
+    printf "\"temperatureC\":%.1f,", temperature_c
+    printf "\"load1\":%.2f,", load_1
+    printf "\"load5\":%.2f,", load_5
+    printf "\"load15\":%.2f,", load_15
+    printf "\"uptimeSeconds\":%.0f", uptime_seconds
+    printf "}\n"
+  }
+' /proc/stat /proc/loadavg /proc/uptime

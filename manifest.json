@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "dev.egoist.cpu-usage",
+  "name": "CPU Usage",
+  "version": "1.0.0",
+  "author": "EGOIST",
+  "license": "MIT",
+  "description": "Compact CPU usage with an iStat-inspired history, temperature, process, load, and uptime panel.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "CPU Usage",
+    "description": "Live user and system CPU usage, history, temperature, top processes, load, and uptime.",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

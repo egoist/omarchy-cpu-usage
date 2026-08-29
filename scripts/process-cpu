@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+
+set -u
+export LC_ALL=C
+
+clock_ticks=$(getconf CLK_TCK 2>/dev/null || printf '100')
+[[ $clock_ticks =~ ^[0-9]+$ ]] || clock_ticks=100
+
+sample_dir=$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/omarchy-cpu-usage.XXXXXX")
+trap 'rm -rf -- "$sample_dir"' EXIT
+
+snapshot() {
+  local output_path=$1
+  local stat_path line pid name after state ppid pgrp session tty_nr tpgid
+  local flags minflt cminflt majflt cmajflt utime stime
+
+  : > "$output_path"
+  for stat_path in /proc/[0-9]*/stat; do
+    [[ -r $stat_path ]] || continue
+    IFS= read -r line < "$stat_path" || continue
+    pid=${line%% *}
+    name=${line#*(}
+    name=${name%)*}
+    after=${line##*) }
+    read -r state ppid pgrp session tty_nr tpgid flags minflt cminflt majflt cmajflt utime stime _ <<< "$after"
+
+    [[ $pid =~ ^[0-9]+$ && $utime =~ ^[0-9]+$ && $stime =~ ^[0-9]+$ ]] || continue
+    name=${name//$'\t'/ }
+    printf '%s\t%s\t%s\n' "$pid" "$name" "$((utime + stime))" >> "$output_path"
+  done
+}
+
+start_ns=$(date +%s%N)
+snapshot "$sample_dir/first"
+sleep 0.65
+end_ns=$(date +%s%N)
+snapshot "$sample_dir/second"
+elapsed_ns=$((end_ns - start_ns))
+((elapsed_ns > 0)) || elapsed_ns=1
+
+awk -F '\t' -v clock_ticks="$clock_ticks" -v elapsed_ns="$elapsed_ns" '
+  NR == FNR {
+    previous_ticks[$1] = $3
+    next
+  }
+
+  {
+    pid = $1
+    name = $2
+    ticks = $3
+    if (!(pid in previous_ticks)) next
+    delta = ticks - previous_ticks[pid]
+    if (delta <= 0 || name == "") next
+
+    cpu_by_name[name] += delta * 100000000000 / (clock_ticks * elapsed_ns)
+    process_count[name]++
+    if (!(name in representative_pid) || delta > largest_delta[name]) {
+      representative_pid[name] = pid
+      largest_delta[name] = delta
+    }
+  }
+
+  END {
+    for (name in cpu_by_name)
+      printf "%s\t%s\t%.3f\t%d\n", representative_pid[name], name, cpu_by_name[name], process_count[name]
+  }
+' "$sample_dir/first" "$sample_dir/second" |
+  sort -t $'\t' -k3,3nr -k2,2 |
+  head -n 32 |
+  jq -Rn '[inputs | split("\t") | {
+    pid: (.[0] | tonumber),
+    name: .[1],
+    cpuPercent: (.[2] | tonumber),
+    processCount: (.[3] | tonumber)
+  }]'
