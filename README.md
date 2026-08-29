@@ -2,6 +2,8 @@
 
 An iStat Menus-inspired Omarchy Quattro bar widget for live CPU usage, history, temperature, top processes, load averages, and uptime.
 
+![CPU Usage preview](preview.png)
+
 ## Features
 
 - Compact upright vertical `CPU` label and adjacent meter, centered in a standard icon slot
