@@ -188,10 +188,6 @@ BarWidget {
           anchors.bottom: parent.bottom
           height: parent.height * root.userPercent / 100
           color: "#168cfa"
-
-          Behavior on height {
-            NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
-          }
         }
 
         Rectangle {
@@ -201,13 +197,6 @@ BarWidget {
           anchors.bottomMargin: userFill.height
           height: parent.height * root.systemPercent / 100
           color: "#f05a9d"
-
-          Behavior on height {
-            NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
-          }
-          Behavior on anchors.bottomMargin {
-            NumberAnimation { duration: 320; easing.type: Easing.OutCubic }
-          }
         }
       }
     }
