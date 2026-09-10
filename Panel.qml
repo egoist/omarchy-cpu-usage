@@ -18,10 +18,10 @@ Panel {
   property var processRows: []
 
   readonly property var barIdentity: hostWidget || root
-  readonly property var snapshot: hostWidget && hostWidget.cpuSnapshot
+  readonly property var snapshot: root.opened && hostWidget && hostWidget.cpuSnapshot
     ? hostWidget.cpuSnapshot
     : ({})
-  readonly property var history: hostWidget && hostWidget.cpuHistory
+  readonly property var history: root.opened && hostWidget && hostWidget.cpuHistory
     ? hostWidget.cpuHistory
     : []
   readonly property string cpuError: hostWidget ? String(hostWidget.cpuError || "") : ""
