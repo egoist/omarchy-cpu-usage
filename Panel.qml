@@ -37,7 +37,11 @@ Panel {
   readonly property real temperatureC: Number(snapshot.temperatureC || -1)
   readonly property color userColor: "#168cfa"
   readonly property color systemColor: "#f05a9d"
-  readonly property color gridColor: Qt.rgba(barForeground.r, barForeground.g, barForeground.b, 0.14)
+  // Text on the popup takes the popup's own text colour. barForeground is
+  // tuned for the bar, and can be dark when the popup behind the text is
+  // dark too (Tokyo Night, #2).
+  readonly property color panelForeground: Color.popups.text
+  readonly property color gridColor: Qt.rgba(panelForeground.r, panelForeground.g, panelForeground.b, 0.14)
 
   function localPath(url) {
     var value = String(url || "")
@@ -194,7 +198,7 @@ Panel {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             text: root.formatTemperature() + "  ·  " + Math.round(root.cpuPercent) + "%"
-            color: root.barForeground
+            color: root.panelForeground
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
             font.pixelSize: Style.font.title
             font.bold: true
@@ -267,7 +271,7 @@ Panel {
             Text {
               anchors.verticalCenter: parent.verticalCenter
               text: "User  " + root.userPercent.toFixed(1) + "%"
-              color: root.barForeground
+              color: root.panelForeground
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.body
             }
@@ -286,7 +290,7 @@ Panel {
             Text {
               anchors.verticalCenter: parent.verticalCenter
               text: "System  " + root.systemPercent.toFixed(1) + "%"
-              color: root.barForeground
+              color: root.panelForeground
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.body
             }
@@ -296,7 +300,7 @@ Panel {
         Rectangle {
           width: parent.width
           height: Math.max(1, Style.space(1))
-          color: root.barForeground
+          color: root.panelForeground
           opacity: 0.12
         }
 
@@ -339,7 +343,7 @@ Panel {
           text: root.processError !== ""
             ? root.processError
             : (root.processLoading ? "Sampling process CPU…" : "No active process CPU")
-          color: Qt.darker(root.barForeground, 1.35)
+          color: Qt.darker(root.panelForeground, 1.35)
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.body
           horizontalAlignment: Text.AlignHCenter
@@ -375,7 +379,7 @@ Panel {
                 anchors.centerIn: parent
                 visible: processIcon.status !== Image.Ready
                 text: "󰣆"
-                color: root.barForeground
+                color: root.panelForeground
                 font.family: root.bar ? root.bar.fontFamily : Style.font.family
                 font.pixelSize: Style.font.body
               }
@@ -389,7 +393,7 @@ Panel {
               anchors.verticalCenter: parent.verticalCenter
               text: root.processDisplayName(modelData.name)
                 + (Number(modelData.processCount || 0) > 1 ? "  ·  " + modelData.processCount : "")
-              color: root.barForeground
+              color: root.panelForeground
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.body
               elide: Text.ElideRight
@@ -401,7 +405,7 @@ Panel {
               anchors.verticalCenter: parent.verticalCenter
               width: Style.space(78)
               text: Number(modelData.cpuPercent || 0).toFixed(1) + "%"
-              color: root.barForeground
+              color: root.panelForeground
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.body
               font.bold: true
@@ -413,7 +417,7 @@ Panel {
         Rectangle {
           width: parent.width
           height: Math.max(1, Style.space(1))
-          color: root.barForeground
+          color: root.panelForeground
           opacity: 0.12
         }
 
@@ -443,7 +447,7 @@ Panel {
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
               text: modelData.value
-              color: root.barForeground
+              color: root.panelForeground
               font.family: root.bar ? root.bar.fontFamily : Style.font.family
               font.pixelSize: Style.font.body
               font.bold: true
@@ -454,7 +458,7 @@ Panel {
         Text {
           width: parent.width
           text: root.cpuError !== "" ? root.cpuError : "Per-process usage is sampled live · R to refresh"
-          color: Qt.darker(root.barForeground, 1.5)
+          color: Qt.darker(root.panelForeground, 1.5)
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.caption
           horizontalAlignment: Text.AlignHCenter
